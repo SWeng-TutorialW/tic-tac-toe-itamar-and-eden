@@ -1,12 +1,12 @@
 package il.cshaifasweng.OCSFMediatorExample.server;
 
+import il.cshaifasweng.OCSFMediatorExample.entities.*;
 import il.cshaifasweng.OCSFMediatorExample.server.ocsf.AbstractServer;
 import il.cshaifasweng.OCSFMediatorExample.server.ocsf.ConnectionToClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
 import il.cshaifasweng.OCSFMediatorExample.server.ocsf.SubscribedClient;
 
 public class SimpleServer extends AbstractServer {
@@ -14,50 +14,13 @@ public class SimpleServer extends AbstractServer {
 	private static int[][] board = new int[3][3];
 	private int playerCnt = 0;
 
-	private class InvalidTileException extends Exception { // exceptions for invalid moves
-		public int row;
-		public int col;
-		public int playerNum;
-
-		public InvalidTileException(String message,int playerNum,int row,int col) {
-			super(message);
-			this.row = row;
-			this.col = col;
-			this.playerNum = playerNum;
-		}
-	}
 	public SimpleServer(int port) {
 		super(port);
 	}
 
-	private class ClientMessage { // used to get client tile and number
-		public int row;
-		public int col;
-		public int playerNum;
-
-		public ClientMessage(int row,int col,int playerNum) {
-			this.row = row;
-			this.col = col;
-			this.playerNum = playerNum;
-		}
-	}
-
-	private class WinMessage { // message to send to winning client
-		public int playerNum;
-
-		public WinMessage(int playerNum) {
-			this.playerNum = playerNum;
-		}
-	}
-	
-	private class ServerMessage { // used to send server messages to clients
-		public int[][] board;
-		public int playerNum;
-
-		public ServerMessage(int[][] board,int playerNum) {
-			this.board = board;
-			this.playerNum = playerNum;
-		}
+	public static void main(String[] args) throws IOException {
+		SimpleServer server = new SimpleServer(3000);
+		server.listen();
 	}
 
 	@Override
@@ -78,11 +41,19 @@ public class SimpleServer extends AbstractServer {
 				SubscribersList.add(connection);
 				try {
 					if (this.playerCnt == 0) {
-						client.sendToClient(1);
+						int numAlloc = 1;
+						client.sendToClient(numAlloc);
 						this.playerCnt++;
+						System.out.println("Player Count: " + this.playerCnt);
 					}
-					else {
-						client.sendToClient(2);
+					else if (this.playerCnt == 1) {
+						this.playerCnt++;
+						System.out.println("Player Count: " + this.playerCnt);
+						int numAlloc = 2;
+						StartMessage startMessage = new StartMessage(SimpleServer.board,numAlloc);
+						//WinMessage winMessage = new WinMessage(SimpleServer.board, numAlloc);
+						System.out.println("Sending server message.");
+						client.sendToClient(startMessage);
 					}
 				} catch (IOException e) {
 					throw new RuntimeException(e);
@@ -106,18 +77,18 @@ public class SimpleServer extends AbstractServer {
 			int col = message.col;
 			int playerNum = message.playerNum;
 			try {
-				int turnResult = playTurn(row, col, playerNum);
+				int turnResult = this.playTurn(row, col, playerNum);
 				if (turnResult == 0) { // if draw let both clients know
-					String serverMessage = "draw";
-					sendToAllClients(serverMessage);
+					DrawMessage serverMessage = new DrawMessage(SimpleServer.board);
+					this.sendToAllClients(serverMessage);
 				}
 				else if (turnResult == 1) { // if win let both clients know the winner
-					WinMessage serverMessage = new WinMessage(playerNum);
-					sendToAllClients(serverMessage);
+					WinMessage serverMessage = new WinMessage(SimpleServer.board,playerNum);
+					this.sendToAllClients(serverMessage);
 				}
 				else { // let client know move was accepted and second client that he can play
-					ServerMessage serverMessage = new ServerMessage(board, playerNum);
-					sendToAllClients(serverMessage);
+					ServerMessage serverMessage = new ServerMessage(SimpleServer.board, playerNum);
+					this.sendToAllClients(serverMessage);
 				}
 			}
 			catch (InvalidTileException e) { // if move was illegal, let playing client know the mistake and play again
@@ -130,7 +101,7 @@ public class SimpleServer extends AbstractServer {
 			}
 		}
 	}
-	public void sendToAllClients(String message) {
+	public void sendToAllClients(Object message) {
 		try {
 			for (SubscribedClient subscribedClient : SubscribersList) {
 				subscribedClient.getClient().sendToClient(message);
@@ -142,22 +113,22 @@ public class SimpleServer extends AbstractServer {
 
 	private boolean IsWin(int playerNum) { // check if move causes the playing client to win
 		for (int i = 0; i < 3; i++) {
-			if (board[i][0] == playerNum && board[i][1] == playerNum && board[i][2] == playerNum) {
+			if (SimpleServer.board[i][0] == playerNum && SimpleServer.board[i][1] == playerNum && SimpleServer.board[i][2] == playerNum) {
 				return true;
 			}
 		}
 
 		for (int i = 0; i < 3; i++) {
-			if (board[0][i] == playerNum && board[1][i] == playerNum && board[2][i] == playerNum) {
+			if (SimpleServer.board[0][i] == playerNum && SimpleServer.board[1][i] == playerNum && SimpleServer.board[2][i] == playerNum) {
 				return true;
 			}
 		}
 
-		if (board[0][0] == playerNum && board[1][1] == playerNum && board[2][2] == playerNum) {
+		if (SimpleServer.board[0][0] == playerNum && SimpleServer.board[1][1] == playerNum && SimpleServer.board[2][2] == playerNum) {
 			return true;
 		}
 
-		if (board[0][2] == playerNum && board[1][1] == playerNum && board[2][0] == playerNum) {
+		if (SimpleServer.board[0][2] == playerNum && SimpleServer.board[1][1] == playerNum && SimpleServer.board[2][0] == playerNum) {
 			return true;
 		}
 
@@ -167,7 +138,7 @@ public class SimpleServer extends AbstractServer {
 	private boolean isFull() { // check if board is full - thus game ends in draw
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
-				if (board[i][j] == 0) {
+				if (SimpleServer.board[i][j] == 0) {
 					return false;
 				}
 			}
@@ -177,22 +148,22 @@ public class SimpleServer extends AbstractServer {
 	}
 
 	private int playTurn(int row,int col,int playerNum) throws InvalidTileException { // play current client turn
-		if (row < 0 || row >= board.length) {
+		if (row < 0 || row >= SimpleServer.board.length) {
 			throw new InvalidTileException("Player " + playerNum + " tried to place out of bounds: (row = " + row + ").",playerNum, row, col);
 		}
-		if (col < 0 || col >= board.length) {
+		if (col < 0 || col >= SimpleServer.board.length) {
 			throw new InvalidTileException("Player " + playerNum + " tried to place out of bounds: (col = " + col + ").",playerNum, row, col);
 		}
-		if (board[row][col] != 0) // if tile isn't empty, ask to replace
+		if (SimpleServer.board[row][col] != 0) // if tile isn't empty, ask to replace
 		{
 			throw new InvalidTileException("Player " + playerNum + " tried to place on occupied tile: " + row + "," + col + ".",playerNum,row,col);
 		}
-		board[row][col] = playerNum;
-		boolean isWin = IsWin(playerNum);
+		SimpleServer.board[row][col] = playerNum;
+		boolean isWin = this.IsWin(playerNum);
 		if (isWin) { // if client won, return 1, if caused a draw, return 0, if game continues, return -1
 			return 1;
 		}
-		boolean isFull = isFull();
+		boolean isFull = this.isFull();
 		if (isFull) {
 			return 0;
 		}
