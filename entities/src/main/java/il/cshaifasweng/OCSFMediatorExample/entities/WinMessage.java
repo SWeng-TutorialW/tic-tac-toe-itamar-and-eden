@@ -1,6 +1,8 @@
 package il.cshaifasweng.OCSFMediatorExample.entities;
 
-public class WinMessage { // message to send to winning client
+import java.io.Serializable;
+
+public class WinMessage implements Serializable { // message to send to winning client
     public int playerNum;
     public int[][] board;
 

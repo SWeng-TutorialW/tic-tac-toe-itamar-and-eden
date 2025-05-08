@@ -12,6 +12,8 @@ public class SimpleClient extends AbstractClient {
 	
 	private static SimpleClient client = null;
 	private int playerNum;
+	private char playerSign;
+	private char otherSign;
 
 	private SimpleClient(String host, int port) {
 		super(host, port);
@@ -19,13 +21,29 @@ public class SimpleClient extends AbstractClient {
 
 	public static void main(String[] args) throws IOException {
 		SimpleClient client = new SimpleClient("localhost", 3000);
-		EventBus.getDefault().register(client);;
+		EventBus.getDefault().register(client);
 		client.openConnection();
+	}
+
+	private void print_board(int[][] board) {
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[i].length; j++) {
+				if (board[i][j] == 0) {
+					System.out.print("? ");
+				}
+				else if (board[i][j] == this.playerNum) {
+					System.out.print(this.playerSign + " ");
+				}
+				else {
+					System.out.print(this.otherSign + " ");
+				}
+			}
+			System.out.println();
+		}
 	}
 
 	@Override
 	protected void handleMessageFromServer(Object msg) { // for handling server messages
-		System.out.println("Hello!");
 		if (msg.getClass().equals(Warning.class)) {
 			EventBus.getDefault().post(new WarningEvent((Warning) msg));
 		}
@@ -49,7 +67,6 @@ public class SimpleClient extends AbstractClient {
 			}
 		}
 		else if (msg.getClass().equals(ServerMessage.class)) {
-			System.out.println("Server message!!");
 			ServerMessage serverMessage = (ServerMessage) msg;
 			int[][] board = serverMessage.board;
 			int playerNum = serverMessage.playerNum;
@@ -69,19 +86,28 @@ public class SimpleClient extends AbstractClient {
 		}
 		else if (msg.getClass().equals(Integer.class)) { // get player numbers from servers
 			this.playerNum = (Integer) msg;
-			System.out.println("Number!!!");
+		}
+		else if (msg.getClass().equals(AllocMessage.class)) {
+			AllocMessage allocMessage = (AllocMessage) msg;
+			this.playerNum = allocMessage.numAlloc;
+			this.playerSign = allocMessage.playerSign;
+			this.otherSign = (this.playerSign == 'X' ? 'O' : 'X');
 		}
 		else if (msg.getClass().equals(StartMessage.class)) {
-			System.out.println("Start!!!");
 			StartMessage startMessage = (StartMessage) msg;
-			this.playerNum = startMessage.playerNum;
-			Coords tile = this.playTurn(startMessage.board);
-			ClientMessage message = new ClientMessage(tile.row,tile.col,this.playerNum);
-			try{
-				this.sendToServer(message);
+			int startingPlayerNum = startMessage.startingPlayerNum;
+			if (startingPlayerNum == this.playerNum) {
+				Coords tile = this.playTurn(startMessage.board);
+				ClientMessage message = new ClientMessage(tile.row,tile.col,this.playerNum);
+				try{
+					this.sendToServer(message);
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
 			}
-			catch (IOException e1) {
-				e1.printStackTrace();
+			else {
+				this.updateBoard(startMessage.board);
 			}
 		}
 	}
@@ -95,9 +121,9 @@ public class SimpleClient extends AbstractClient {
 
 	private Coords playTurn(int[][] Board) { // update your board and get player input for turn, return coords
 		// show updated board ui
-		System.out.println(Arrays.toString(Board));
+		this.print_board(Board);
 		Scanner scanner = new Scanner(System.in);
-		System.out.print("Your turn");
+		System.out.println("Your turn!");
 		System.out.print("Enter row: ");
 		int row = scanner.nextInt();
 		System.out.print("Enter col: ");
@@ -119,23 +145,24 @@ public class SimpleClient extends AbstractClient {
 
 	private void updateBoard(int[][] Board) {
 		// update board ui after own turn (after approval from server)
-		System.out.println(Arrays.toString(Board));
+		this.print_board(Board);
+		System.out.println("Waiting for opponent's move...");
 	}
 
 	private void endGameWin(int[][] Board, int playerNum) {
 		// end game in win ui
-		System.out.println(Arrays.toString(Board));
+		this.print_board(Board);
 		if (this.playerNum == playerNum) {
 			System.out.println("You win!");
 		}
 		else {
-			System.out.println("You lost!");
+			System.out.println("You lose!");
 		}
 	}
 
 	private void endGamedraw(int[][] Board) {
 		// end game in draw ui
-		System.out.println(Arrays.toString(Board));
+		this.print_board(Board);
 		System.out.println("Draw!");
 	}
 

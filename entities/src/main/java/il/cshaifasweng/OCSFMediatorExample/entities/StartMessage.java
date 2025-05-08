@@ -4,9 +4,10 @@ import java.io.Serializable;
 
 public class StartMessage implements Serializable {
     public int[][] board;
-    public int playerNum;
-    public StartMessage(int[][] board, int playerNum) {
+    public int startingPlayerNum;
+
+    public StartMessage(int[][] board, int startingPlayerNum) {
         this.board = board;
-        this.playerNum = playerNum;
+        this.startingPlayerNum = startingPlayerNum;
     }
 }

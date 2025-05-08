@@ -1,6 +1,8 @@
 package il.cshaifasweng.OCSFMediatorExample.entities;
 
-public class ClientMessage { // used to get client tile and number
+import java.io.Serializable;
+
+public class ClientMessage implements Serializable { // used to get client tile and number
     public int row;
     public int col;
     public int playerNum;
