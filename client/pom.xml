@@ -8,6 +8,11 @@
 		<groupId>il.cshaifasweng</groupId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
+
+
+
+
+
 	<groupId>il.cshaifasweng.OCSFMediatorExample</groupId>
 	<artifactId>client</artifactId>
 	<dependencies>
