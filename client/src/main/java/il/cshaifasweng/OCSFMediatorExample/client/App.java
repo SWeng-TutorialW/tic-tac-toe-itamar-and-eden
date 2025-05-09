@@ -1,7 +1,9 @@
 package il.cshaifasweng.OCSFMediatorExample.client;
 
+import il.cshaifasweng.OCSFMediatorExample.entities.ClientMessage;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -22,12 +24,17 @@ public class App extends Application {
     private static Scene scene;
     private SimpleClient client;
 
+    public static boolean gameRunning = false;
+
     @Override
     public void start(Stage stage) throws IOException {
     	EventBus.getDefault().register(this);
     	client = SimpleClient.getClient();
     	client.openConnection();
-        scene = new Scene(loadFXML("primary"), 640, 480);
+        client.sendToServer("add client");
+        GameController.client = client;
+
+        scene = new Scene(loadFXML("WelcomePage"));
         stage.setScene(scene);
         stage.show();
     }
@@ -67,6 +74,19 @@ public class App extends Application {
 
 	public static void main(String[] args) {
         launch();
+    }
+
+
+    @FXML
+    public static void switchToGame() {
+        try {
+            gameRunning = true;
+            setRoot("GamePage");
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 }
