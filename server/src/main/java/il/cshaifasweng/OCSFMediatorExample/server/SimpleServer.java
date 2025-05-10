@@ -68,6 +68,7 @@ public class SimpleServer extends AbstractServer {
 						this.playerCnt++;
 					}
 					else if (this.playerCnt == 1) { // start game if two players are in
+						board = new int[3][3];
 						this.playerCnt++;
 						AllocMessage allocMessage = new AllocMessage(2,player2sign);
 						client.sendToClient(allocMessage);
@@ -98,18 +99,8 @@ public class SimpleServer extends AbstractServer {
 			int playerNum = message.playerNum;
 			try {
 				int turnResult = this.playTurn(row, col, playerNum);
-				if (turnResult == 0) { // if draw let both clients know
-					DrawMessage serverMessage = new DrawMessage(SimpleServer.copy_board());
-					this.sendToAllClients(serverMessage);
-				}
-				else if (turnResult == 1) { // if win let both clients know the winner
-					WinMessage serverMessage = new WinMessage(SimpleServer.copy_board(),playerNum);
-					this.sendToAllClients(serverMessage);
-				}
-				else { // let client know move was accepted and second client that he can play
-					ServerMessage serverMessage = new ServerMessage(SimpleServer.copy_board(), playerNum);
-					this.sendToAllClients(serverMessage);
-				}
+				ServerMessage serverMessage = new ServerMessage(SimpleServer.copy_board(), playerNum);
+				this.sendToAllClients(serverMessage);
 			}
 			catch (InvalidTileException e) { // if move was illegal, let playing client know the mistake and play again
 				try {
@@ -177,6 +168,7 @@ public class SimpleServer extends AbstractServer {
 		if (SimpleServer.board[row][col] != 0) // if tile isn't empty, ask to replace
 		{
 			throw new InvalidTileException("Player " + playerNum + " tried to place on occupied tile: " + row + "," + col + ".",playerNum,row,col);
+
 		}
 		SimpleServer.board[row][col] = playerNum;
 		boolean isWin = this.IsWin(playerNum);
@@ -189,5 +181,14 @@ public class SimpleServer extends AbstractServer {
 		}
 		return -1;
 	}
+
+//	private void print_board(int[][] board) {
+//		for (int i = 0; i < board.length; i++) {
+//			for (int j = 0; j < board[i].length; j++) {
+//				System.out.print(board[i][j]  + " ");
+//			}
+//			System.out.println();
+//		}
+//	}
 
 }
