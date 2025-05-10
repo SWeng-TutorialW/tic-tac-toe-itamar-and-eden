@@ -28,15 +28,15 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-    	EventBus.getDefault().register(this);
+        EventBus.getDefault().register(this);
     	client = SimpleClient.getClient();
     	client.openConnection();
-        client.sendToServer("add client");
         GameController.client = client;
 
         scene = new Scene(loadFXML("WelcomePage"));
         stage.setScene(scene);
         stage.show();
+        client.sendToServer("add client");
     }
 
     static void setRoot(String fxml) throws IOException {
@@ -72,6 +72,11 @@ public class App extends Application {
     	
     }
 
+    @Subscribe
+    public void onAllocation(AllocationEvent event) {
+        GameController.mySign = event.getMySign();
+    }
+
 	public static void main(String[] args) {
         launch();
     }
@@ -82,6 +87,7 @@ public class App extends Application {
         try {
             gameRunning = true;
             setRoot("GamePage");
+            System.out.println("Game started!");
         }
         catch (IOException e) {
             e.printStackTrace();

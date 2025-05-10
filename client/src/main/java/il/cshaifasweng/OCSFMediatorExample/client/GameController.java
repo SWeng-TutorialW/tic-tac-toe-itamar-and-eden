@@ -1,10 +1,15 @@
 package il.cshaifasweng.OCSFMediatorExample.client;
 
+import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.shape.Line;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 public class GameController {
     public static boolean mySign; // X is true, O is false
@@ -12,15 +17,19 @@ public class GameController {
 
     public static SimpleClient client;
 
+    public GameController() {
+        // Register this controller as an EventBus listener
+        EventBus.getDefault().register(this);
+    }
 
     @FXML
-    private static Button btn11, btn12, btn13, btn21, btn22, btn23, btn31, btn32, btn33;
+    private Button btn11, btn12, btn13, btn21, btn22, btn23, btn31, btn32, btn33;
 
     @FXML
     private Line win1, win2, win3, win4, win5, win6, win7, win8;
 
     @FXML
-    private static Label turnText;
+    private Label turnLabel;
 
     @FXML
     void btn11Pressed(ActionEvent event) {
@@ -59,23 +68,12 @@ public class GameController {
 
     @FXML
     public void initialize() {
-//        isPrimary = App.getPlayerId() == 1;
-        win1.setManaged(false);
-        win1.setVisible(false);
-        win2.setManaged(false);
-        win2.setVisible(false);
-        win3.setManaged(false);
-        win3.setVisible(false);
-        win4.setManaged(false);
-        win4.setVisible(false);
-        win5.setManaged(false);
-        win5.setVisible(false);
-        win6.setManaged(false);
-        win6.setVisible(false);
-        win7.setManaged(false);
-        win7.setVisible(false);
-        win8.setManaged(false);
-        win8.setVisible(false);
+        Line[] winLines = {win1, win2, win3, win4, win5, win6, win7, win8};
+        for (Line winLine : winLines) {
+            winLine.setManaged(false);
+            winLine.setVisible(false);
+        }
+        turnLabel.setText("Get ready");
     }
 
     void buttonPressed(int btnNumber) {
@@ -84,22 +82,11 @@ public class GameController {
         Button[] buttons = {btn11, btn12, btn13, btn21, btn22, btn23, btn31, btn32, btn33, btn33};
         Button pressedBtn = buttons[btnIndex];
         int[] coords = {(int)(btnIndex / 3), btnIndex % 3};
-        GameController.playTurn(coords);
+        EventBus.getDefault().post(new GameMove(coords));
     }
 
-    private static void playTurn(int[] coords) {
-        client.playTurn(coords);
-    }
 
-    public static void endGame(int[][] board) {
-        updateBoard(board);
-    }
-
-    public static void updateBoard(int[][] board) {
-        System.out.println(myTurn);
-        turnText.setText(myTurn ? "Your turn" : "Opponent's turn");
-
-        System.out.println(board[0][0]);
+    void updateBoard(int[][] board) {
         Button[] buttons = {btn11, btn12, btn13, btn21, btn22, btn23, btn31, btn32, btn33, btn33};
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -114,5 +101,63 @@ public class GameController {
             }
         }
 
+    }
+
+
+    @Subscribe
+    public void onUpdateBoard(UpdateBoardEvent event) {
+        Platform.runLater(() -> {
+            int[][] board = event.getBoard();
+            updateBoard(board);
+            myTurn = event.getMyTurn();
+            int status = checkBoard(board);
+            String turnLabelText;
+            if (status == 0) {
+                turnLabelText = myTurn ? "Your turn" : "Opponent's turn";
+            } else if (status == -1) {
+                turnLabelText = "DRAW!";
+                myTurn = false;
+            } else {
+                Line[] winLines = {win1, win2, win3, win4, win5, win6, win7, win8};
+                winLines[status-1].setVisible(true);
+                turnLabelText = myTurn ? "YOU LOSE!" : "YOU WIN!";
+                myTurn = false;
+            }
+            turnLabel.setText(turnLabelText);
+        });
+
+    }
+
+    private int checkBoard(int[][] board) { // 0 normal, -1 draw, else win
+        // check if someone won
+        for (int i = 0; i < 3; i++) {
+            if (board[i][0] == board[i][1] && board[i][1] == board[i][2] && board[i][0] != 0) {
+                return 1+i;
+            }
+        }
+
+        for (int i = 0; i < 3; i++) {
+            if (board[0][i] == board[1][i] && board[1][i] == board[2][i] && board[0][i] != 0) {
+                return 4+i;
+            }
+        }
+
+        if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != 0) {
+            return 7;
+        }
+
+        if (board[0][2] == board[1][1] && board[1][1] == board[2][0] && board[0][2] != 0) {
+            return 8;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == 0) {
+                    return 0;
+                }
+            }
+        }
+
+        return -1;
     }
 }

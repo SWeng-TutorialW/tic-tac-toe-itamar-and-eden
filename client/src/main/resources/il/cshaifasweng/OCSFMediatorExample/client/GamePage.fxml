@@ -75,7 +75,7 @@
       <Line fx:id="win6" endX="54.0" endY="110.0" layoutX="343.0" layoutY="331.0" startX="54.0" startY="-193.0" stroke="RED" strokeWidth="10.0" />
       <Line fx:id="win7" endX="89.0" endY="90.0" layoutX="353.0" layoutY="341.0" startX="-196.0" startY="-198.0" stroke="RED" strokeWidth="10.0" />
       <Line fx:id="win8" endX="78.0" endY="-204.0" layoutX="363.0" layoutY="351.0" startX="-207.0" startY="78.0" stroke="RED" strokeWidth="10.0" />
-      <Label fx:id="turnText" alignment="CENTER" layoutX="232.0" layoutY="464.0" prefHeight="17.0" prefWidth="143.0" text="Get ready!">
+      <Label fx:id="turnLabel" alignment="CENTER" layoutX="232.0" layoutY="464.0" prefHeight="17.0" prefWidth="143.0" text="Get ready!">
          <font>
             <Font size="16.0" />
          </font>

@@ -4,10 +4,12 @@ import il.cshaifasweng.OCSFMediatorExample.entities.*;
 import org.greenrobot.eventbus.EventBus;
 
 import il.cshaifasweng.OCSFMediatorExample.client.ocsf.AbstractClient;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 public class SimpleClient extends AbstractClient {
 	
 	private static SimpleClient client = null;
@@ -17,6 +19,7 @@ public class SimpleClient extends AbstractClient {
 
 	private SimpleClient(String host, int port) {
 		super(host, port);
+		EventBus.getDefault().register(this);
 	}
 
 	@Override
@@ -26,38 +29,37 @@ public class SimpleClient extends AbstractClient {
 		}
 		else if (msg.getClass().equals(WinMessage.class)) {
 			WinMessage winMessage = (WinMessage) msg;
-			GameController.endGame(winMessage.board);
+			boolean myTurn = winMessage.playerNum != playerId;
+//			EventBus.getDefault().post(new UpdateBoardEvent(winMessage.board, myTurn));
 		}
 		else if (msg.getClass().equals(DrawMessage.class)) {
 			DrawMessage drawMessage = (DrawMessage) msg;
-			GameController.endGame(drawMessage.board);
+//			EventBus.getDefault().post(new UpdateBoardEvent(drawMessage.board, false));
 		}
 		else if (msg.getClass().equals(InvalidTileException.class)) { // game turn was denied
 			InvalidTileException e = (InvalidTileException) msg;
-			System.out.println("Move was invalid");
+			System.out.println(e.getMessage());
 		} else if (msg.getClass().equals(ServerMessage.class)) { // game turn was accepted
 			ServerMessage serverMessage = (ServerMessage) msg;
 			int[][] board = serverMessage.board;
-			int playerNum = serverMessage.playerNum;
-			GameController.myTurn = playerNum != playerId;
-			GameController.updateBoard(board);
+			boolean myTurn = serverMessage.playerNum != playerId;
+			EventBus.getDefault().post(new UpdateBoardEvent(board, myTurn));
 		}
 		else if (msg.getClass().equals(Integer.class)) { // get player numbers from servers
 			playerId = (Integer) msg;
 		}
 		else if (msg.getClass().equals(AllocMessage.class)) {
 			AllocMessage allocMessage = (AllocMessage) msg;
+			boolean mySign = allocMessage.playerSign == 'X';
 			playerId = allocMessage.numAlloc;
-			GameController.mySign = allocMessage.playerSign == 'X';
+			EventBus.getDefault().post(new AllocationEvent(mySign));
 		}
 		else if (msg.getClass().equals(StartMessage.class)) { // game started
 			StartMessage startMessage = (StartMessage) msg;
-			System.out.println("Game started!");
 			App.switchToGame();
 			int startingPlayerNum = startMessage.startingPlayerNum;
-			GameController.myTurn = startingPlayerNum == playerId;
-			System.out.println("Player " + GameController.myTurn);
-			GameController.updateBoard(startMessage.board);
+			boolean myTurn = startingPlayerNum == playerId;
+			EventBus.getDefault().post(new UpdateBoardEvent(startMessage.board, myTurn));
 		}
 	}
 
@@ -70,10 +72,13 @@ public class SimpleClient extends AbstractClient {
 	}
 
 	// send to server a turn request
-	public void playTurn(int[] coords) {
+
+	@Subscribe
+	public void onGameMove(GameMove gameMove) {
+		System.out.println(gameMove.toString());
+		int[] coords = gameMove.getCoords();
 		int row = coords[0];
 		int col = coords[1];
-		System.out.println("Playing turn " + row + ", " + col);
 		ClientMessage message = new ClientMessage(row, col, playerId);
 		try{
 			this.sendToServer(message);
