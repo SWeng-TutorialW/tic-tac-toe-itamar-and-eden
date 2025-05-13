@@ -75,7 +75,6 @@ public class SimpleClient extends AbstractClient {
 
 	@Subscribe
 	public void onGameMove(GameMove gameMove) {
-		System.out.println(gameMove.toString());
 		int[] coords = gameMove.getCoords();
 		int row = coords[0];
 		int col = coords[1];

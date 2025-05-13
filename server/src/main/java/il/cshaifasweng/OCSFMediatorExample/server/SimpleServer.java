@@ -30,11 +30,6 @@ public class SimpleServer extends AbstractServer {
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-		SimpleServer server = new SimpleServer(3000);
-		server.listen();
-	}
-
 	private static int[][] copy_board() {
 		int[][] copy = new int[3][3];
 		for (int i = 0; i < 3; i++) {
